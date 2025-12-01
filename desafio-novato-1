@@ -1,0 +1,85 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+// ----------- Estrutura do nó (sala da mansão) -------------
+typedef struct Sala {
+    char nome[50];
+    struct Sala* esquerda;
+    struct Sala* direita;
+} Sala;
+
+// ----------- Cria dinamicamente uma sala -------------------
+Sala* criarSala(const char* nome) {
+    Sala* s = (Sala*)malloc(sizeof(Sala));
+    strcpy(s->nome, nome);
+    s->esquerda = NULL;
+    s->direita = NULL;
+    return s;
+}
+
+// ----------- Exploração interativa da mansão ---------------
+void explorarSalas(Sala* atual) {
+    char opcao;
+
+    while (atual != NULL) {
+        printf("\n📍 Você está na sala: **%s**\n", atual->nome);
+
+        // Se chegou num nó-folha, acabou o caminho
+        if (atual->esquerda == NULL && atual->direita == NULL) {
+            printf("🚪 Não há mais portas. Fim do caminho!\n");
+            return;
+        }
+
+        printf("Para onde deseja ir?\n");
+        if (atual->esquerda != NULL) printf("  (e) Esquerda → %s\n", atual->esquerda->nome);
+        if (atual->direita != NULL) printf("  (d) Direita → %s\n", atual->direita->nome);
+        printf("  (s) Sair da exploração\n");
+        printf("Escolha: ");
+        scanf(" %c", &opcao);
+
+        if (opcao == 'e' && atual->esquerda != NULL) {
+            atual = atual->esquerda;
+        } 
+        else if (opcao == 'd' && atual->direita != NULL) {
+            atual = atual->direita;
+        } 
+        else if (opcao == 's') {
+            printf("\n👋 Você decidiu sair da mansão.\n");
+            return;
+        } 
+        else {
+            printf("\n❌ Caminho inválido! Tente novamente.\n");
+        }
+    }
+}
+
+int main() {
+    // ----------- CRIAÇÃO DA ÁRVORE (MAPA) ----------------
+    // Mansão exemplo:
+    //
+    //                    Hall de Entrada
+    //                   /                \
+    //            Sala de Estar        Corredor
+    //            /         \          /         \
+    //      Biblioteca     Cozinha   Quarto     Porão
+
+    Sala* hall = criarSala("Hall de Entrada");
+
+    hall->esquerda = criarSala("Sala de Estar");
+    hall->direita  = criarSala("Corredor");
+
+    hall->esquerda->esquerda = criarSala("Biblioteca");
+    hall->esquerda->direita  = criarSala("Cozinha");
+
+    hall->direita->esquerda = criarSala("Quarto");
+    hall->direita->direita  = criarSala("Porão");
+
+    // ----------- EXPLORAÇÃO ------------------------------
+    printf("🏰 Bem-vindo à Mansão Sombria!\n");
+    explorarSalas(hall);
+
+    printf("\n🏁 Fim do jogo!\n");
+
+    return 0;
+}
