@@ -1,0 +1,273 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+/* ============================================================
+====   ESTRUTURAS DO NÍVEL AVENTUREIRO   ===================
+============================================================ */
+
+/* ------------- Árvore Binária (Mansão) -------------- */
+typedef struct Sala {
+char nome[50];
+char pista[50];
+struct Sala *esq;
+struct Sala *dir;
+} Sala;
+
+/* ------------- Árvore de Busca (BST de pistas) ------- */
+typedef struct NodoBST {
+char pista[50];
+struct NodoBST *esq;
+struct NodoBST *dir;
+} NodoBST;
+
+/* ============================================================
+====   ESTRUTURAS DO NÍVEL MESTRE — TABELA HASH   ==========
+============================================================ */
+
+typedef struct NodoHash {
+char pista[50];
+char suspeito[50];
+struct NodoHash *prox;
+} NodoHash;
+
+#define TAM_HASH 10
+NodoHash* tabela[TAM_HASH];
+
+/* ============================================================
+====   FUNÇÕES DA MANSÃO (NÍVEL NOVATO)   ==================
+============================================================ */
+
+Sala* criarSala(const char* nome, const char* pista) {
+Sala* nova = (Sala*) malloc(sizeof(Sala));
+strcpy(nova->nome, nome);
+strcpy(nova->pista, pista);
+nova->esq = nova->dir = NULL;
+return nova;
+}
+
+/* ============================================================
+====   FUNÇÕES DA BST (NÍVEL AVENTUREIRO)   ================
+============================================================ */
+
+NodoBST* inserirBST(NodoBST* raiz, const char* pista) {
+if (raiz == NULL) {
+NodoBST* novo = (NodoBST*) malloc(sizeof(NodoBST));
+strcpy(novo->pista, pista);
+novo->esq = novo->dir = NULL;
+return novo;
+}
+if (strcmp(pista, raiz->pista) < 0)
+raiz->esq = inserirBST(raiz->esq, pista);
+else if (strcmp(pista, raiz->pista) > 0)
+raiz->dir = inserirBST(raiz->dir, pista);
+
+```
+return raiz;
+```
+
+}
+
+int buscarBST(NodoBST* raiz, const char* pista) {
+if (raiz == NULL) return 0;
+int cmp = strcmp(pista, raiz->pista);
+if (cmp == 0) return 1;
+if (cmp < 0)  return buscarBST(raiz->esq, pista);
+return buscarBST(raiz->dir, pista);
+}
+
+void emOrdemBST(NodoBST* raiz) {
+if (raiz == NULL) return;
+emOrdemBST(raiz->esq);
+printf(" - %s\n", raiz->pista);
+emOrdemBST(raiz->dir);
+}
+
+/* ============================================================
+====   FUNÇÕES DA TABELA HASH — NÍVEL MESTRE   ==============
+============================================================ */
+
+int funcaoHash(const char* pista) {
+int soma = 0;
+for (int i = 0; pista[i] != '\0'; i++)
+soma += pista[i];
+return soma % TAM_HASH;
+}
+
+void inserirHash(const char* pista, const char* suspeito) {
+int pos = funcaoHash(pista);
+
+```
+NodoHash* novo = (NodoHash*) malloc(sizeof(NodoHash));
+strcpy(novo->pista, pista);
+strcpy(novo->suspeito, suspeito);
+novo->prox = tabela[pos];
+tabela[pos] = novo;
+```
+
+}
+
+void mostrarHash() {
+printf("\n========== TABELA HASH (PISTA → SUSPEITO) ==========\n");
+for (int i = 0; i < TAM_HASH; i++) {
+printf("[%d]: ", i);
+NodoHash* aux = tabela[i];
+if (!aux) {
+printf("vazio\n");
+continue;
+}
+while (aux) {
+printf("(%s → %s)  ", aux->pista, aux->suspeito);
+aux = aux->prox;
+}
+printf("\n");
+}
+}
+
+const char* suspeitoMaisCitado() {
+char candidatos[20][50];
+int freq[20] = {0};
+int qtd = 0;
+
+```
+for (int i = 0; i < TAM_HASH; i++) {
+    NodoHash* aux = tabela[i];
+    while (aux) {
+        int encontrado = 0;
+
+        for (int j = 0; j < qtd; j++) {
+            if (strcmp(candidatos[j], aux->suspeito) == 0) {
+                freq[j]++;
+                encontrado = 1;
+                break;
+            }
+        }
+
+        if (!encontrado) {
+            strcpy(candidatos[qtd], aux->suspeito);
+            freq[qtd] = 1;
+            qtd++;
+        }
+
+        aux = aux->prox;
+    }
+}
+
+int maior = -1, indice = -1;
+for (int i = 0; i < qtd; i++) {
+    if (freq[i] > maior) {
+        maior = freq[i];
+        indice = i;
+    }
+}
+
+if (indice == -1) return "Nenhum suspeito registrado";
+return candidatos[indice];
+```
+
+}
+
+/* ============================================================
+====   NÍVEL AVENTUREIRO — EXPLORAR SALAS   =================
+============================================================ */
+
+void explorarSalas(Sala* atual, NodoBST** pistas) {
+char escolha;
+
+```
+while (atual != NULL) {
+    printf("\nVocê está na sala: %s\n", atual->nome);
+
+    if (strlen(atual->pista) > 0) {
+        if (!buscarBST(*pistas, atual->pista)) {
+            printf("🔍 Você encontrou uma pista: %s\n", atual->pista);
+            *pistas = inserirBST(*pistas, atual->pista);
+
+            printf("Quem você acha que está ligado a esta pista? ");
+            char suspeito[50];
+            scanf(" %[^\n]", suspeito);
+
+            inserirHash(atual->pista, suspeito);
+        }
+    }
+
+    printf("Escolha:\n");
+    printf("  e - ir para a esquerda\n");
+    printf("  d - ir para a direita\n");
+    printf("  s - sair da exploração\n");
+    printf("> ");
+    scanf(" %c", &escolha);
+
+    if (escolha == 'e')
+        atual = atual->esq;
+    else if (escolha == 'd')
+        atual = atual->dir;
+    else if (escolha == 's')
+        break;
+    else
+        printf("Opção inválida!\n");
+}
+```
+
+}
+
+/* ============================================================
+====   PROGRAMA PRINCIPAL — NÍVEL MESTRE   =================
+============================================================ */
+
+int main() {
+NodoBST* pistas = NULL;
+for (int i = 0; i < TAM_HASH; i++)
+tabela[i] = NULL;
+
+```
+Sala* hall = criarSala("Hall de Entrada", "");
+Sala* corredor = criarSala("Corredor Principal", "Mancha estranha no chão");
+Sala* biblioteca = criarSala("Biblioteca", "Página rasgada de diário");
+Sala* cozinha = criarSala("Cozinha", "");
+Sala* porao = criarSala("Porão", "Chave enferrujada");
+Sala* jardim = criarSala("Jardim", "");
+
+hall->esq = corredor;
+hall->dir = biblioteca;
+corredor->esq = cozinha;
+corredor->dir = porao;
+biblioteca->dir = jardim;
+
+int opc;
+do {
+    printf("\n====== MANSÃO SOMBRIA — NÍVEL MESTRE ======\n");
+    printf("1 - Explorar salas\n");
+    printf("2 - Ver pistas coletadas (BST)\n");
+    printf("3 - Ver tabela hash (pista → suspeito)\n");
+    printf("4 - Ver suspeito mais citado\n");
+    printf("0 - Sair\n");
+    printf("Escolha: ");
+    scanf("%d", &opc);
+
+    switch (opc) {
+        case 1:
+            explorarSalas(hall, &pistas);
+            break;
+        case 2:
+            printf("\n📜 Pistas coletadas (ordem alfabética):\n");
+            emOrdemBST(pistas);
+            break;
+        case 3:
+            mostrarHash();
+            break;
+        case 4:
+            printf("\n👤 Suspeito mais associado às pistas: %s\n", suspeitoMaisCitado());
+            break;
+        case 0:
+            printf("Saindo...\n");
+            break;
+        default:
+            printf("Opção inválida!\n");
+    }
+} while (opc != 0);
+
+return 0;
+```
+
+}
